@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Examen · Radioaficionados Argentina</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b0d;--s1:#0f1316;--s2:#161b1f;--border:#1c2227;--acc:#00e5a0;--acc2:#0099ff;--warn:#ff4040;--warn2:#ffaa00;--txt:#ccd6de;--dim:#4a5a66;--mid:#7a8f9c;--mono:'Share Tech Mono',monospace;--disp:'Barlow Condensed',sans-serif;--body:'Barlow',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9999}
+.gbg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+
+/* ─── HEADER ─── */
+header{border-bottom:1px solid var(--border);padding:18px 36px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(8,11,13,.96);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-dot{width:32px;height:32px;border:1.5px solid var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.logo-dot::before{content:'';position:absolute;width:8px;height:8px;background:var(--acc);border-radius:50%;animation:pulse 2.4s infinite}
+.logo-dot::after{content:'';position:absolute;width:22px;height:22px;border:1px solid rgba(0,229,160,.25);border-radius:50%;animation:pulse 2.4s .6s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+.logo-name{font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:3px;text-transform:uppercase}
+.logo-name span{color:var(--acc)}
+.hdr-meta{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:right;line-height:1.7}
+
+/* ─── START ─── */
+#scr-start{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 69px);padding:60px 20px}
+.start-h{font-family:var(--disp);font-weight:900;font-size:clamp(40px,7vw,82px);text-transform:uppercase;letter-spacing:3px;line-height:1;text-align:center;margin-bottom:10px}
+.start-sub{font-family:var(--disp);font-weight:300;font-size:clamp(18px,3vw,32px);letter-spacing:8px;color:var(--acc);text-transform:uppercase;text-align:center;margin-bottom:24px}
+.start-desc{font-size:13px;color:var(--mid);text-align:center;max-width:540px;line-height:1.8;margin-bottom:50px}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;width:100%;max-width:920px;margin-bottom:40px}
+.cat{border:1px solid var(--border);background:var(--s1);padding:26px 22px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.cat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .2s}
+.cat:hover,.cat.sel{border-color:var(--acc);background:var(--s2);transform:translateY(-2px)}
+.cat:hover::before,.cat.sel::before{transform:scaleX(1)}
+.cat-code{font-family:var(--mono);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:10px}
+.cat-name{font-family:var(--disp);font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.cat-info{font-size:12px;color:var(--mid);line-height:1.5}
+.cat-count{margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.cat-count b{font-family:var(--disp);font-size:22px;font-weight:700;color:var(--txt);font-style:normal}
+
+.btn-go{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:3px;text-transform:uppercase;background:var(--acc);color:#000;border:none;padding:15px 48px;cursor:pointer;transition:all .2s;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)}
+.btn-go:hover{background:#00ffb8;transform:scale(1.02)}
+.btn-go:disabled{opacity:.25;cursor:not-allowed}
+
+/* ─── QUIZ ─── */
+#scr-quiz{display:none;padding:40px 20px;max-width:860px;margin:0 auto}
+.prog-wrap{margin-bottom:30px}
+.prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.prog-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px}
+.prog-num{font-family:var(--disp);font-weight:700;font-size:30px;color:var(--acc)}
+.prog-num span{font-size:14px;color:var(--dim);font-weight:300}
+.prog-track{height:3px;background:var(--border)}
+.prog-fill{height:100%;background:var(--acc);transition:width .4s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--acc)}
+
+.cap-tag{font-family:var(--mono);font-size:10px;color:var(--acc2);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;padding:4px 10px;border:1px solid rgba(0,153,255,.18);display:inline-block}
+.q-num{font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:8px}
+.q-text{font-family:var(--disp);font-weight:600;font-size:clamp(17px,2.4vw,23px);line-height:1.4;margin-bottom:28px}
+.multi-note{font-family:var(--mono);font-size:10px;color:var(--warn2);letter-spacing:1px;margin-bottom:16px;display:none}
+.multi-note.on{display:block}
+
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:14px;padding:15px 18px;border:1px solid var(--border);background:var(--s1);cursor:pointer;transition:all .15s}
+.opt:hover{border-color:rgba(0,229,160,.35);background:var(--s2)}
+.opt.sel{border-color:var(--acc2);background:rgba(0,153,255,.05)}
+.opt.sel .ol{background:var(--acc2);color:#000;border-color:var(--acc2)}
+.opt.correct{border-color:var(--acc)!important;background:rgba(0,229,160,.07)!important}
+.opt.correct .ol{background:var(--acc)!important;color:#000!important;border-color:var(--acc)!important}
+.opt.wrong{border-color:var(--warn)!important;background:rgba(255,64,64,.06)!important}
+.opt.wrong .ol{background:var(--warn)!important;color:#fff!important;border-color:var(--warn)!important}
+.opt.show-c{border-color:rgba(0,229,160,.4)!important;opacity:.65}
+.opt.show-c .ol{background:rgba(0,229,160,.15)!important;color:var(--acc)!important}
+.opt.dis{pointer-events:none}
+.ol{width:26px;height:26px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;flex-shrink:0;transition:all .15s;text-transform:uppercase}
+.ot{font-size:13px;line-height:1.5;color:var(--txt);padding-top:3px}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px;flex-wrap:wrap}
+.btn-nav{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--mid);padding:11px 24px;cursor:pointer;transition:all .2s}
+.btn-nav:hover:not(:disabled){border-color:var(--acc2);color:var(--acc2)}
+.btn-nav:disabled{opacity:.2;cursor:not-allowed}
+.btn-confirm{background:rgba(0,229,160,.1);border-color:var(--acc);color:var(--acc)}
+.btn-confirm:hover{background:var(--acc)!important;color:#000!important}
+.btn-finish{background:var(--acc2);color:#000;border-color:var(--acc2);display:none}
+.btn-finish:hover{background:#33b3ff!important;color:#000!important}
+
+/* ─── RESULTS ─── */
+#scr-results{display:none;padding:40px 20px;max-width:860px;margin:0 auto}
+.res-head{text-align:center;margin-bottom:44px;padding-bottom:36px;border-bottom:1px solid var(--border)}
+.verdict{font-family:var(--disp);font-weight:900;font-size:13px;letter-spacing:5px;text-transform:uppercase;margin-bottom:14px}
+.verdict.pass{color:var(--acc)}.verdict.fail{color:var(--warn)}
+.score{font-family:var(--disp);font-weight:900;font-size:clamp(60px,12vw,120px);line-height:1;margin-bottom:6px}
+.score.pass{color:var(--acc)}.score.fail{color:var(--warn)}
+.res-detail{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:36px}
+.stat{border:1px solid var(--border);background:var(--s1);padding:18px;text-align:center}
+.sv{font-family:var(--disp);font-weight:700;font-size:36px;margin-bottom:3px}
+.sv.ok{color:var(--acc)}.sv.bad{color:var(--warn)}.sv.tot{color:var(--acc2)}
+.sl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+
+.rev-title{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;color:var(--warn);display:flex;align-items:center;gap:10px}
+.rev-title::after{content:'';flex:1;height:1px;background:rgba(255,64,64,.15)}
+.wi{margin-bottom:18px;border:1px solid rgba(255,64,64,.15);background:rgba(255,64,64,.02)}
+.wi-h{padding:13px 18px;border-bottom:1px solid rgba(255,64,64,.1);display:flex;gap:12px;align-items:flex-start}
+.wi-n{font-family:var(--mono);font-size:9px;color:var(--warn);letter-spacing:1px;white-space:nowrap;padding-top:2px}
+.wi-q{font-size:13px;line-height:1.5;color:var(--txt);font-weight:500}
+.wi-b{padding:12px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ar{display:flex;flex-direction:column;gap:3px}
+.al{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase}
+.al.given{color:var(--warn)}.al.correct{color:var(--acc)}
+.av{font-size:13px;color:var(--txt);line-height:1.4}
+
+.res-btns{display:flex;gap:10px;justify-content:center;margin-top:36px;flex-wrap:wrap}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+
+@media(max-width:580px){.wi-b{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}.header{padding:14px 18px}}
+</style>
+</head>
+<body>
+<div class="gbg"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <div class="logo-name">RA<span>SIM</span></div>
+  </div>
+  <div class="hdr-meta">ENACOM · Res. N° 3635/2017<br>Reglamento General de Radioaficionados</div>
+</header>
+
+<!-- START -->
+<div id="scr-start">
+  <div class="start-h">Simulador de Examen</div>
+  <div class="start-sub">Radioaficionados · Argentina</div>
+  <p class="start-desc">Banco oficial de preguntas basado en el Reglamento General de Radioaficionados (Res. ENACOM N° 3635/2017). Elegí el bloque temático y comenzá el simulacro.</p>
+  <div class="cat-grid" id="catGrid"></div>
+  <button class="btn-go" id="btnStart" disabled onclick="startExam()">▶ Iniciar Examen</button>
+</div>
+
+<!-- QUIZ -->
+<div id="scr-quiz">
+  <div class="prog-wrap">
+    <div class="prog-top">
+      <span class="prog-lbl">PROGRESO</span>
+      <span class="prog-num" id="pNum">1 <span>/ 1</span></span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="pFill" style="width:0%"></div></div>
+  </div>
+  <div class="cap-tag" id="capTag"></div>
+  <div class="q-num" id="qNum"></div>
+  <div class="q-text" id="qText"></div>
+  <div class="multi-note" id="multiNote">⚠ SELECCIÓN MÚLTIPLE — marcá todas las correctas antes de confirmar</div>
+  <div class="opts" id="optsWrap"></div>
+  <div class="nav-row">
+    <button class="btn-nav" id="btnPrev" onclick="prevQ()" disabled>← Anterior</button>
+    <button class="btn-nav btn-confirm" id="btnConf" onclick="confirmAnswer()">Confirmar respuesta</button>
+    <button class="btn-nav" id="btnNext" onclick="nextQ()" disabled>Siguiente →</button>
+    <button class="btn-nav btn-finish" id="btnFin" onclick="finishExam()">Finalizar ✓</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="scr-results">
+  <div class="res-head">
+    <div class="verdict" id="rVerdict"></div>
+    <div class="score" id="rScore"></div>
+    <div class="res-detail" id="rDetail"></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="sv ok" id="sOk">0</div><div class="sl">Correctas</div></div>
+    <div class="stat"><div class="sv bad" id="sBad">0</div><div class="sl">Incorrectas</div></div>
+    <div class="stat"><div class="sv tot" id="sTot">0</div><div class="sl">Total</div></div>
+  </div>
+  <div id="wrongReview"></div>
+  <div class="res-btns">
+    <button class="btn-go" onclick="restartExam()">↺ Reintentar bloque</button>
+    <button class="btn-nav" style="border-color:var(--acc2);color:var(--acc2)" onclick="goHome()">← Elegir otro bloque</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// BANCO DE PREGUNTAS — datos del docx oficial
+// ══════════════════════════════════════════════
+const QUESTIONS = [
+// ─── CAP I ───
+{id:'I.1',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es el objeto del "Reglamento General de Radioaficionados"?',multi:true,opts:[{l:'a',t:'Regular la actividad de los Radioaficionados, Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas.'},{l:'b',t:'Atribuir y reglamentar el uso de las bandas de frecuencias para el Servicio de Aficionados y el Servicio de Aficionados por Satélite, teniendo en consideración las condiciones de diseño, instalación y operación de estaciones radioeléctricas en sus respectivas bandas de frecuencias, a fin de facilitar el acceso y el desarrollo de la actividad.'},{l:'c',t:'Establecer criterios técnicos para el diseño de equipamiento destinado a la actividad de los Radioaficionados.'}],correct:['a','b']},
+{id:'I.2',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es el alcance del "Reglamento General de Radioaficionados"?',opts:[{l:'a',t:'Servicio de Aficionados.'},{l:'b',t:'Servicio de Aficionados por Satélite.'},{l:'c',t:'Servicio de Aficionados y Servicio de Aficionados por Satélite.'}],correct:['c']},
+{id:'I.3',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es la Autoridad de Aplicación para el "Reglamento General de Radioaficionados"?',opts:[{l:'a',t:'SECRETARÍA DE COMUNICACIONES (SC).'},{l:'b',t:'COMISIÓN NACIONAL DE COMUNICACIONES (CNC).'},{l:'c',t:'ENTE NACIONAL DE COMUNICACIONES (ENACOM).'},{l:'d',t:'MINISTERIO DE COMUNICACIONES (MINCOM).'}],correct:['c']},
+{id:'I.4',cap:'Cap. I – Disposiciones Generales',q:'A los fines del Reglamento vigente en la República Argentina, los términos "aficionados" y "aficionados por satélite" ¿son considerados equivalentes a "radioaficionados" y "radioaficionados por satélite", respectivamente?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'I.5',cap:'Cap. I – Disposiciones Generales',q:'Defina "SERVICIO DE RADIOAFICIONADOS":',opts:[{l:'a',t:'Servicio de radiocomunicación privado que tiene por objeto la instrucción de operadores comerciales.'},{l:'b',t:'Servicio de radiocomunicación público que tiene por objeto los estudios técnicos efectuados por operadores comerciales.'},{l:'c',t:'Servicio de radiocomunicación que tiene por objeto la instrucción individual, la intercomunicación y los estudios técnicos efectuados por Radioaficionados.'},{l:'d',t:'Servicio de radiocomunicación privado que tiene por objeto la instrucción de operadores de radiodifusión.'}],correct:['c']},
+{id:'I.6',cap:'Cap. I – Disposiciones Generales',q:'Defina "SERVICIO DE RADIOAFICIONADOS POR SATÉLITE":',opts:[{l:'a',t:'Servicio de radiocomunicación privado que tiene por objeto la instrucción de operadores comerciales.'},{l:'b',t:'Servicio de radiocomunicación que utiliza estaciones espaciales situadas en satélites artificiales de la Tierra para los mismos fines que el Servicio de Radioaficionados.'},{l:'c',t:'Servicio de radiocomunicación privado que tiene por objeto la instrucción de operadores de radiodifusión.'},{l:'d',t:'Servicio de radiocomunicación en el cual las señales emitidas o retransmitidas por estaciones espaciales están destinadas a la recepción directa por el público en general.'}],correct:['b']},
+{id:'I.7',cap:'Cap. I – Disposiciones Generales',q:'Defina "RADIOAFICIONADO":',opts:[{l:'a',t:'Persona debidamente autorizada que se interesa en la radiotecnia con carácter exclusivamente individual, sin fines de lucro y que realiza con su estación actividades de instrucción, de intercomunicación y estudios técnicos.'},{l:'b',t:'Persona debidamente autorizada que se interesa en la radiotecnia con carácter exclusivamente comercial, con fines de lucro y que realiza con su estación actividades de instrucción, de intercomunicación y estudios técnicos.'},{l:'c',t:'Persona debidamente autorizada que se interesa en la radiotecnia con carácter exclusivamente individual, con fines de lucro y que realiza con su estación actividades de instrucción, de intercomunicación y estudios técnicos.'},{l:'d',t:'Persona debidamente autorizada que se interesa en la radiotecnia con carácter exclusivamente individual, sin fines de lucro y que realiza con su estación actividades de intercomunicación con fines particulares.'}],correct:['a']},
+{id:'I.8',cap:'Cap. I – Disposiciones Generales',q:'Defina "RADIO CLUB":',opts:[{l:'a',t:'Asociación Civil, integrada por cualquier operador de radio habilitado, cuyos objetivos fundamentales se apoyan en la agrupación de los mismos para propender a la difusión y fomento de la actividad radial.'},{l:'b',t:'Asociación Civil, integrada por entidades que agrupan a operadores de radio, cuyos objetivos fundamentales se basan en la enseñanza y práctica de la actividad comercial.'},{l:'c',t:'Persona Jurídica de Orden Privado cuya composición se tipifica dentro de la figura de Asociación Civil sin fines de lucro y sus objetivos fundamentales se apoyan en la agrupación de los Radioaficionados para fomentar el ingreso, enseñanza, difusión y práctica de la actividad.'},{l:'d',t:'Asociación Civil, integrada por usuarios del Servicios de Banda Ciudadana cuyos objetivos fundamentales se apoyan en la agrupación de los mismos para propender a la difusión y fomento de la actividad radial.'}],correct:['c']},
+{id:'I.9',cap:'Cap. I – Disposiciones Generales',q:'Defina "INSTITUCIÓN AUTORIZADA":',opts:[{l:'a',t:'Aquella institución, distinta de los Radio Clubes y de las Instituciones Reconocidas, autorizada por la Autoridad de Aplicación para dictar cursos sobre técnica, reglamentación y ética operativa, telegrafía y todo otro curso afín a la actividad, como así también, tomar exámenes para ingreso y ascenso de categorías de Radioaficionados.'},{l:'b',t:'Aquella institución, distinta de los Radio Clubes, autorizada por la Autoridad de Aplicación para fomentar el ingreso, difusión y práctica de la actividad, a través de Prácticas Operativas.'}],correct:['a']},
+{id:'I.10',cap:'Cap. I – Disposiciones Generales',q:'Defina "INSTITUCIÓN RECONOCIDA":',opts:[{l:'a',t:'Aquella institución, distinta de los Radio Clubes y de las Instituciones Autorizadas, reconocida por la Autoridad de Aplicación para fomentar el ingreso, difusión y práctica de la actividad, a través de Prácticas Operativas.'},{l:'b',t:'Aquella institución, distinta de los Radio Clubes, autorizada por la Autoridad de Aplicación para dictar cursos sobre técnica, reglamentación y ética operativa, telegrafía y todo otro curso afín a la actividad.'}],correct:['a']},
+{id:'I.11',cap:'Cap. I – Disposiciones Generales',q:'Defina "LICENCIA DE RADIOAFICIONADO":',opts:[{l:'a',t:'Autorización que otorga un Radio Club reconocido a todas aquellas personas físicas o jurídicas que han cumplido con los requisitos reglamentarios.'},{l:'b',t:'Autorización que otorga la Autoridad de Aplicación a todas aquellas personas jurídicas que hayan cumplido con los requisitos reglamentarios para obtener licencia, no facultando a instalar y operar estaciones del Servicio de Radioaficionados.'},{l:'c',t:'Autorización que otorga la Autoridad de Aplicación a todas aquellas personas físicas y jurídicas que han cumplido con los requisitos establecidos en el Reglamento. Su otorgamiento las faculta a instalar y operar estaciones en sus respectivas bandas de frecuencia, categorías y condiciones.'},{l:'d',t:'Autorización que otorga la Autoridad de Aplicación a todas aquellas personas jurídicas que han cumplido con los requisitos reglamentarios para obtener licencia y lo faculta para instalar y operar estaciones de Radioaficionado.'}],correct:['c']},
+{id:'I.12',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es la sigla del PERMISO INTERNACIONAL DE RADIOAFICIONADOS?',opts:[{l:'a',t:'I.A.R.P.'},{l:'b',t:'P.I.R.A.'},{l:'c',t:'I.R.P.A.'}],correct:['a']},
+{id:'I.13',cap:'Cap. I – Disposiciones Generales',q:'Defina "PERMISO INTERNACIONAL DE RADIO AFICIONADOS":',opts:[{l:'a',t:'Autorización extendida por la Autoridad de Aplicación de acuerdo con lo previsto en la Ley 24.730 y la Resolución 3745 SC/1997.'},{l:'b',t:'Autorización extendida por la Autoridad de Aplicación de acuerdo con lo previsto en la Resolución SC 50/1998.'}],correct:['a']},
+{id:'I.14',cap:'Cap. I – Disposiciones Generales',q:'Defina "SEÑAL DISTINTIVA":',opts:[{l:'a',t:'Identificación otorgada por la Autoridad de Aplicación a un Radioaficionado, Radio Club, Institución Autorizada o Institución Reconocida.'},{l:'b',t:'Identificación otorgada por IARU a un Radioaficionado, Radio Club, Institución Autorizada o Institución Reconocida.'},{l:'c',t:'Código que representa una clase de emisión, compuesta por el tipo de modulación, anchura de banda y naturaleza de la información.'}],correct:['a']},
+{id:'I.15',cap:'Cap. I – Disposiciones Generales',q:'Defina "CATEGORÍA" de Radioaficionado:',opts:[{l:'a',t:'Es el nivel de calificación que otorga la Autoridad de Aplicación a los titulares de licencias comerciales que hayan cumplido con los requisitos establecidos.'},{l:'b',t:'Es el nivel de calificación que otorgan los a los titulares de licencia de Radioaficionado que hayan cumplido con los requisitos que para cada una de ellas se exige.'},{l:'c',t:'Nivel de calificación que otorga la Autoridad de Aplicación a aquel Radioaficionado que cumpla con los requisitos establecidos en el Reglamento. Cada categoría conlleva derechos y obligaciones asociados a la misma.'},{l:'d',t:'Es el nivel de calificación que otorga la Autoridad de Aplicación a los titulares de licencia de radiodifusión.'}],correct:['c']},
+{id:'I.16',cap:'Cap. I – Disposiciones Generales',q:'Defina "CONTACTO DE DX":',opts:[{l:'a',t:'Se conviene en denominar así a aquellos comunicados de duración ilimitada en donde se intercambian datos, comentarios técnicos y nombre de los operadores.'},{l:'b',t:'Comunicados entre estaciones que, por la distancia que las separa, inaccesibilidad geográfica, u otro factor de dificultad, no resulte frecuente la comunicación. Se realizan en los segmentos de bandas en que los contactos DX tienen prioridad y se limitan exclusivamente a intercambios de comunicación mínima e indispensable.'},{l:'c',t:'Se conviene en denominar así a aquellos comunicados con varios Radioaficionados a la vez, en los que se intercambian datos técnicos, nombre de los operadores, domicilios y números de orden.'},{l:'d',t:'Se conviene en denominar así a aquellos comunicados en los que se intercambian datos, comentarios generales, nombre de los operadores y datos de las estaciones.'}],correct:['b']},
+{id:'I.17',cap:'Cap. I – Disposiciones Generales',q:'Defina "ESTACIÓN REPETIDORA DE AFICIONADO":',opts:[{l:'a',t:'Estación destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados, reservada únicamente al titular de la misma.'},{l:'b',t:'Estación destinada a la transmisión de comunicaciones que se realicen en la actividad comercial de radio y abierta a todos los usuarios.'},{l:'c',t:'Estación fija, destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados y abierta al tráfico general de los mismos, caracterizada por la señal distintiva del titular de la estación, posición geográfica, sub-tono y frecuencia asignada.'},{l:'d',t:'Estación destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados, reservada únicamente a los Radio Clubes titulares de la misma.'}],correct:['c']},
+{id:'I.18',cap:'Cap. I – Disposiciones Generales',q:'Defina "REPETIDOR DIGITAL (Digipeater)":',opts:[{l:'a',t:'Estación capaz de recibir y retransmitir información digital por paquete (Packet-Radio), en tiempo real, en la misma frecuencia, con capacidad de enlazar dos estaciones automáticamente. Se identifica con la señal distintiva del titular.'},{l:'b',t:'Estación capaz de recibir información digital, en distinta frecuencia, con capacidad de enlazar dos estaciones automáticamente. Se identifica con la señal distintiva del titular.'},{l:'c',t:'Estación capaz de recibir y retransmitir información emitida en cualquier modo, en tiempo real, en la misma frecuencia y con capacidad para enlazar varias estaciones a la vez.'},{l:'d',t:'Estación capaz de recibir información analógica, en distinta frecuencia con capacidad de enlazar dos estaciones automáticamente. Se identifica con la señal distintiva del titular.'}],correct:['a']},
+{id:'I.19',cap:'Cap. I – Disposiciones Generales',q:'Defina "CONTROLADOR NODO TERMINAL (TNC)":',opts:[{l:'a',t:'Es una unidad o programa que permite la conexión radial entre transceptores para el envío de datos analógicos. Se identifica con la señal distintiva del titular.'},{l:'b',t:'Unidad o programa que permite la conexión entre computadoras y equipos de radio, para la recepción y transmisión de datos digitales mediante un módem, en las bandas y modos atribuidos al Servicio de Radioaficionados. Se identifica con la señal distintiva del titular.'},{l:'c',t:'Es un equipo que permite la retransmisión automática de mensajes analógicos emitidos desde un radioaficionado a otro.'},{l:'d',t:'Es un transceptor que permite la retransmisión automática de mensajes analógicos emitidos desde un radioaficionado a otro.'}],correct:['b']},
+{id:'I.20',cap:'Cap. I – Disposiciones Generales',q:'Defina "SISTEMA DE BOLETINES Y BASE DE DATOS (BBS)":',opts:[{l:'a',t:'Sistema automático, compuesto por computadoras, equipos radioeléctricos y Controladores Nodo Terminal que permite el almacenamiento y la distribución de mensajes y archivos de Radioaficionados. El ingreso y utilización del mismo es sin ningún tipo de limitación de acceso o de impedimento de uso. Su responsable es el titular de la licencia y se identifica con la señal distintiva del mismo.'},{l:'b',t:'Sistema manual, compuesto de transceptor y computadora, que agiliza el tránsito de paquetes digitales y distribuye información relativa a la actividad.'},{l:'c',t:'Sistema automático, atendido o no, compuesto de uno o más equipos, que permite el contacto entre dos estaciones que emiten comunicaciones analógicas.'},{l:'d',t:'Sistema manual, compuesto de transceptor y antena, que agiliza el tránsito de paquetes analógicos y distribuye información relativa a la actividad.'}],correct:['a']},
+{id:'I.21',cap:'Cap. I – Disposiciones Generales',q:'Defina "SISTEMA DE MENSAJES PERSONALES (PMS/PBBS)":',opts:[{l:'a',t:'Controlador Nodo Terminal (CNT) para almacenamiento de mensajes personales. Realiza correo electrónico y se identifica con la señal distintiva del titular.'},{l:'b',t:'Transceptor que posibilita el envío de mensajes generales dentro del correo electrónico entre Radioaficionados.'},{l:'c',t:'TNC para almacenamiento de mensajes abiertos al tráfico general del correo electrónico de radioescuchas.'},{l:'d',t:'Transceptor que posibilita el envío de mensajes en general dentro del correo electrónico entre estaciones de banda ciudadana.'}],correct:['a']},
+{id:'I.22',cap:'Cap. I – Disposiciones Generales',q:'Defina "DISTRIBUCIÓN DE MENSAJES (Forwarding)":',opts:[{l:'a',t:'Mecanismo utilizado por los BBS´s para la distribución de mensajes con otros BBS´s.'},{l:'b',t:'Mecanismo utilizado por los digipeaters y TNC´s para almacenar mensajes.'},{l:'c',t:'Mecanismo utilizado por las repetidoras del Servicio de Radioaficionados para distribuir y almacenar mensajes analógicos.'},{l:'d',t:'Mecanismo utilizado por los Nodos para almacenar mensajes personales.'}],correct:['a']},
+{id:'I.23',cap:'Cap. I – Disposiciones Generales',q:'Defina "TARJETA QSL":',opts:[{l:'a',t:'Confirmación (postal o virtual) que intercambian los Radioaficionados por sus comunicados realizados y los Radioescuchas por los comunicados recepcionados.'},{l:'b',t:'Confirmación que intercambian los Radioaficionados en todos sus comunicados realizados y los radioescuchas por los comunicados recepcionados de estaciones de Radioaficionados.'},{l:'c',t:'Confirmación que intercambian los Radioaficionados en todos sus comunicados realizados y los radioescuchas por los comunicados bilaterales con estaciones de Radioaficionados.'},{l:'d',t:'Confirmación que intercambian los Radioaficionados por sus primeros comunicados realizados y los radioescuchas por los comunicados bilaterales con estaciones de Radioaficionado.'}],correct:['a']},
+{id:'I.24',cap:'Cap. I – Disposiciones Generales',q:'Defina "INSTRUCTORES":',opts:[{l:'a',t:'Miembros del Radio Club que tomará los exámenes y que se desempeñaron como Instructores de cursos. No podrán intervenir, junto con los miembros de comisiones directivas y veedoras en la evaluación de los exámenes.'},{l:'b',t:'Radioaficionado nombrado por el Radio Club, Institución Autorizada o Institución Reconocida, que por su capacidad, experiencia y estudio acredita la competencia necesaria para el dictado de cursos y/o coordinación de Prácticas Operativas, y que estará presente durante la toma y evaluación de los exámenes.'},{l:'c',t:'Miembros de otro Radio Club que, pese a no haber actuado como instructores, podrán intervenir junto con los miembros de comisión directiva en la evaluación de los exámenes.'},{l:'d',t:'Miembros de otro Radio Club que, pese a no haberse desempeñado como Instructores, podrán intervenir, junto con los Veedores Voluntarios en la evaluación de los exámenes.'}],correct:['b']},
+{id:'I.25',cap:'Cap. I – Disposiciones Generales',q:'Defina "CÓDIGO MORSE":',opts:[{l:'a',t:'Comunicados entre estaciones que, por la distancia que las separa, inaccesibilidad geográfica, u otro factor de dificultad, no resulte frecuente la comunicación.'},{l:'b',t:'Sistema de escritura, estandarizado conforme a la Recomendación UIT-R M.1677-1 o sucesivas, que representa las letras del alfabeto, números y otros signos mediante una combinación de sonidos cortos ("puntos"), sonidos largos ("rayas") y silencios ("espacios").'},{l:'c',t:'Condición de operación en que la estación transmite con una potencia máxima de 5 W (CW) o de 10 W (SSB).'}],correct:['b']},
+{id:'I.26',cap:'Cap. I – Disposiciones Generales',q:'Defina "ESTACIÓN DEL SERVICIO DE RADIOAFICIONADO":',opts:[{l:'a',t:'Estación radioeléctrica compuesta por uno o más transmisores, receptores o transceptores, incluyendo los sistemas irradiantes y las instalaciones accesorias, necesarios para operar en el Servicio de Radioaficionados. La misma podrá ser "Fija", "Móvil" o "Móvil de mano".'},{l:'b',t:'Estación fija, destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados y abierta al tráfico general de los mismos.'},{l:'c',t:'Estación radioeléctrica compuesta por uno o más transmisores, receptores o transceptores, incluyendo los sistemas irradiantes y las instalaciones accesorias, necesarios para operar en el Servicio de Radioaficionados por Satélite.'}],correct:['a']},
+{id:'I.27',cap:'Cap. I – Disposiciones Generales',q:'Defina "RADIOBALIZA (RADIOFARO)":',opts:[{l:'a',t:'Estación capaz de recibir y retransmitir información digital por paquetes (Packet-Radio), en tiempo real, en la misma frecuencia, con capacidad de enlazar dos estaciones automáticamente.'},{l:'b',t:'Estación transmisora del Servicio de Radioaficionados, utilizada para determinar las condiciones de propagación y/o ajuste de antenas, que emite a intervalos regulares y en una única frecuencia fija, su señal distintiva y datos referidos, entre otros, a su potencia, antena y altura.'},{l:'c',t:'Estación fija, destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados y abierta al tráfico general de los mismos.'}],correct:['b']},
+{id:'I.28',cap:'Cap. I – Disposiciones Generales',q:'Defina "ESTACIÓN DEL SERVICIO DE RADIOAFICIONADO POR SATÉLITE":',opts:[{l:'a',t:'Estación fija, destinada a la retransmisión automática de las comunicaciones que se realicen en el Servicio de Radioaficionados y abierta al tráfico general de los mismos.'},{l:'b',t:'Estación capaz de recibir y retransmitir información digital por paquetes (Packet-Radio), en tiempo real, en la misma frecuencia.'},{l:'c',t:'Estación radioeléctrica compuesta por uno o más transmisores, receptores o transceptores, incluyendo los sistemas irradiantes y las instalaciones accesorias, necesarios para operar en el Servicio de Radioaficionados por Satélite. La misma podrá ser "Terrena" o "Espacial".'}],correct:['c']},
+{id:'I.29',cap:'Cap. I – Disposiciones Generales',q:'Defina "PROYECTO INTERNACIONAL DE BALIZAS (IBP)":',opts:[{l:'a',t:'Autorización extendida por la Autoridad de Aplicación de acuerdo con lo previsto en la Ley 24.730 y la Resolución 3745 SC/1997.'},{l:'b',t:'Red mundial de radiofaros en alta frecuencia (HF) organizado por IARU, compartiendo en la misma única frecuencia por banda entre las transmisoras (en 20, 17, 15, 12 y 10 metros).'},{l:'c',t:'Método de comunicación empleado por los Radioaficionados, en el que se utiliza la superficie lunar como elemento reflector de ondas de radio.'}],correct:['b']},
+{id:'I.30',cap:'Cap. I – Disposiciones Generales',q:'Defina "DESASTRE":',opts:[{l:'a',t:'Interacción entre una amenaza y una población vulnerable que, por su magnitud, crea una interrupción en el funcionamiento de una sociedad y/o sistema a partir de una desproporción entre los medios necesarios para superarla y aquellos medios a disposición de la comunidad afectada conforme a Ley N° 27.287, Art. 2°.'},{l:'b',t:'Situación, daño provocado por un evento adverso de origen natural o provocado por los seres humanos que, por su magnitud, puede ser atendida por los medios disponibles localmente, conforme a Ley N° 27.287, Art. 2°.'}],correct:['a']},
+{id:'I.31',cap:'Cap. I – Disposiciones Generales',q:'Defina "EMERGENCIA":',opts:[{l:'a',t:'Interacción entre una amenaza y una población vulnerable que, por su magnitud, crea una interrupción en el funcionamiento de una sociedad y/o sistema.'},{l:'b',t:'Situación, daño provocado por un evento adverso de origen natural o provocado por los seres humanos que, por su magnitud, puede ser atendida por los medios disponibles localmente, conforme a Ley N° 27.287, Art. 2°.'}],correct:['b']},
+{id:'I.32',cap:'Cap. I – Disposiciones Generales',q:'Defina "CONCURSO":',opts:[{l:'a',t:'Evento nacional y/o internacional en donde se ponen a prueba las habilidades de los Radioaficionados. Sus bases y condiciones son informadas mediante los boletines y revistas de los Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas.'},{l:'b',t:'Comunicados entre estaciones que, por la distancia que las separa, no resulte frecuente la comunicación.'},{l:'c',t:'Sistema de escritura, estandarizado conforme a la Recomendación UIT-R M.1677-1 o sucesivas.'}],correct:['a']},
+{id:'I.33',cap:'Cap. I – Disposiciones Generales',q:'Defina "ÉTICA OPERATIVA":',opts:[{l:'a',t:'Es el conjunto de deberes, obligaciones, conductas y principios establecidos en el Reglamento y en las disposiciones, recomendaciones y procedimientos fijados por la Unión Internacional de Radioaficionados (IARU), que rigen el normal desenvolvimiento de la actividad de los Radioaficionados.'},{l:'b',t:'Es el conjunto de símbolos, alfabetos y códigos establecidos en el Reglamento y en las disposiciones, recomendaciones y procedimientos fijados por la Unión Internacional de Radioaficionados (IARU).'}],correct:['a']},
+{id:'I.34',cap:'Cap. I – Disposiciones Generales',q:'Defina "VEEDOR":',opts:[{l:'a',t:'Radioaficionado nombrado por el Radio Club, Institución Autorizada o Institución Reconocida, que por su capacidad, experiencia y estudio acredita la competencia necesaria para el dictado de cursos y/o coordinación de Prácticas Operativas.'},{l:'b',t:'Radioaficionado de categoría GENERAL o SUPERIOR, designado por un Radio Club o Institución Autorizada, para estar presente en la sesión de exámenes, firmar las actas y certificados correspondientes e informar anormalidades si las hubiere.'},{l:'c',t:'Responsable de evaluar a los aspirantes al ingreso y ascenso de categorías de conformidad con los procedimientos y condiciones establecidas en el presente Reglamento.'}],correct:['b']},
+{id:'I.35',cap:'Cap. I – Disposiciones Generales',q:'La licencia habilita a su titular a instalar y/u operar estación desde:',opts:[{l:'a',t:'Servicio de Radioaficionados.'},{l:'b',t:'Servicio de Radioaficionados por Satélite.'},{l:'c',t:'Servicio de Radioaficionados y Radioaficionados por Satélite.'}],correct:['c']},
+{id:'I.36',cap:'Cap. I – Disposiciones Generales',q:'Las estaciones del Servicio de Radioaficionados y de Radioaficionados por Satélite estarán sujetas a lo dispuesto por:',opts:[{l:'a',t:'Resolución SC 329/2000 o aquellas que la reemplacen o modifiquen.'},{l:'b',t:'LEY N° 27078.'},{l:'c',t:'Resolución SC 50/1998 o aquellas que la reemplacen o modifiquen.'}],correct:['a']},
+{id:'I.37',cap:'Cap. I – Disposiciones Generales',q:'¿En qué circunstancias las estaciones del Servicio de Radioaficionados y de Radioaficionados por Satélite estarán autorizadas a conectar sus equipos radioeléctricos a las líneas telefónicas?',opts:[{l:'a',t:'Exclusivamente ante emergencias.'},{l:'b',t:'En situaciones de interés comunitario.'},{l:'c',t:'En eventos propios de la actividad.'},{l:'d',t:'En ninguna circunstancia.'}],correct:['a']},
+{id:'I.38',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es la vigencia de la licencia de radioaficionados?',opts:[{l:'a',t:'1 año.'},{l:'b',t:'5 años.'},{l:'c',t:'10 años.'},{l:'d',t:'Depende de la categoría.'}],correct:['b']},
+{id:'I.39',cap:'Cap. I – Disposiciones Generales',q:'¿Por qué período de tiempo se puede renovar la licencia de radioaficionados y en qué condiciones?',opts:[{l:'a',t:'5 años, con renovación automática.'},{l:'b',t:'Indefinido.'},{l:'c',t:'5 años, al realizar el trámite de renovación, rehabilitación o examen de ascenso de categoría.'}],correct:['c']},
+{id:'I.40',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es la vigencia de la autorización de una Estación Repetidora?',opts:[{l:'a',t:'1 año.'},{l:'b',t:'5 años.'},{l:'c',t:'5 años o hasta la cancelación o caducidad de la licencia del titular.'},{l:'d',t:'Depende de la categoría.'}],correct:['c']},
+{id:'I.41',cap:'Cap. I – Disposiciones Generales',q:'¿Con qué intervalo de tiempo un Radioaficionado debe transmitir su señal distintiva?',opts:[{l:'a',t:'5 minutos.'},{l:'b',t:'10 minutos.'},{l:'c',t:'30 minutos.'},{l:'d',t:'Cuando lo desee.'}],correct:['b']},
+{id:'I.42',cap:'Cap. I – Disposiciones Generales',q:'¿En qué frecuencias y bajo qué condiciones se permite el funcionamiento de redes de Emergencia y/o Desastre?',opts:[{l:'a',t:'En todas las bandas, en aquellos casos y en los plazos que determine la Autoridad competente en materia de protección pública, defensa civil y operaciones de socorro.'},{l:'b',t:'En las frecuencias designadas a tal fin, en aquellos casos y en los plazos que determine la Autoridad competente en materia de protección pública, defensa civil y operaciones de socorro.'},{l:'c',t:'En las frecuencias designadas a tal fin, cuando el Radioaficionado lo considere necesario.'}],correct:['b']},
+{id:'I.43',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es el plazo en que un radioaficionado deberá desinstalar sus estaciones una vez producida la CADUCIDAD de su licencia?',opts:[{l:'a',t:'30 días.'},{l:'b',t:'60 días.'},{l:'c',t:'90 días.'},{l:'d',t:'1 año.'},{l:'e',t:'Sin plazo, ante requerimiento de la Autoridad de Aplicación.'}],correct:['c']},
+{id:'I.44',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es el plazo en que un radioaficionado deberá desinstalar sus estaciones ante la CANCELACIÓN de su licencia?',opts:[{l:'a',t:'10 días.'},{l:'b',t:'30 días.'},{l:'c',t:'90 días.'},{l:'d',t:'1 año.'},{l:'e',t:'Sin plazo, ante requerimiento de la Autoridad de Aplicación.'}],correct:['a']},
+{id:'I.45',cap:'Cap. I – Disposiciones Generales',q:'¿De acuerdo al documento "Ética y Procedimientos Operativos para el Radioaficionado" de IARU, cuáles son los principios básicos que rigen el Código de Conducta del Radioaficionado?',multi:true,opts:[{l:'a',t:'Sentido social y espíritu fraternal.'},{l:'b',t:'Lealtad.'},{l:'c',t:'Comprensión.'},{l:'d',t:'No discriminación.'},{l:'e',t:'Buenos modales.'},{l:'f',t:'Objetividad.'},{l:'g',t:'Tolerancia.'}],correct:['a','c','e','g']},
+{id:'I.46',cap:'Cap. I – Disposiciones Generales',q:'¿Cuál es la organización de Radioaficionados que representa sus intereses ante los foros internacionales?',opts:[{l:'a',t:'American Radio Relay League (A.R.R.L.).'},{l:'b',t:'International Telecommunications Union (I.T.U.).'},{l:'c',t:'International Amateur Radio Union (I.A.R.U.).'},{l:'d',t:'Comisión Interamericana de Telecomunicaciones (C.I.T.E.L.).'}],correct:['c']},
+{id:'I.47',cap:'Cap. I – Disposiciones Generales',q:'¿Qué orden de observancia tiene la siguiente reglamentación para los Radioaficionados de la República Argentina?',opts:[{l:'a',t:'Reglamento General de Radioaficionados — Disposiciones, recomendaciones y procedimientos de la IARU — Reglamentación UIT.'},{l:'b',t:'Disposiciones, recomendaciones y procedimientos de la IARU — Reglamento General de Radioaficionados — Reglamentación UIT.'},{l:'c',t:'Reglamentación UIT — Disposiciones, recomendaciones y procedimientos de la IARU — Reglamento General de Radioaficionados.'}],correct:['a']},
+// ─── CAP II ───
+{id:'II.1',cap:'Cap. II – Facultades de la Autoridad de Aplicación',q:'Son facultades de la Autoridad de Aplicación:',multi:true,opts:[{l:'a',t:'Limitar, denegar, suspender o cancelar la licencia de Radioaficionado.'},{l:'b',t:'Asignar o modificar las señales distintivas.'},{l:'c',t:'Tomar exámenes de ingreso y ascenso de categorías.'},{l:'d',t:'Dictar cursos y fomentar la actividad a través de Prácticas Operativas.'}],correct:['a','b']},
+// ─── CAP III ───
+{id:'III.1',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Qué categoría se le otorga a los Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas?',opts:[{l:'a',t:'Novicio'},{l:'b',t:'General'},{l:'c',t:'Superior'}],correct:['b']},
+{id:'III.2',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Cómo debe identificarse el Radioaficionado cuando opere en forma personal la estación del Radio Club?',opts:[{l:'a',t:'Señal distintiva del Radio Club y señal distintiva propia.'},{l:'b',t:'Señal distintiva propia y señal distintiva del Radio Club.'},{l:'c',t:'Señal distintiva propia.'},{l:'d',t:'Señal distintiva del Radio Club.'}],correct:['a']},
+{id:'III.3',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'Cuando el Radioaficionado opere en forma personal la estación del Radio Club, ¿en qué bandas puede operar?',opts:[{l:'a',t:'En las bandas autorizadas a su categoría.'},{l:'b',t:'En las bandas correspondientes a la categoría Superior.'}],correct:['a']},
+{id:'III.4',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'En condiciones de Práctica Operativa por parte de aspirantes a obtener licencia, ¿cómo se deben identificar?',opts:[{l:'a',t:'Con señal distintiva del Radio Club, aclarando "en Práctica Operativa".'},{l:'b',t:'Con señal distintiva del Instructor.'}],correct:['a']},
+{id:'III.5',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Quiénes podrán otorgar Certificados de Radioescuchas?',opts:[{l:'a',t:'Radio Clubes.'},{l:'b',t:'Instituciones Autorizadas.'},{l:'c',t:'Instituciones Reconocidas.'}],correct:['a']},
+{id:'III.6',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿El Radioaficionado puede realizar trámites en forma personal ante la Autoridad de Aplicación?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'III.7',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿El Radio Club podrá poseer filiales?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'III.8',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Bajo qué condiciones la Autoridad de Aplicación podrá autorizar filiales a un Radio Club?',opts:[{l:'a',t:'En localidades dentro de la misma provincia en las que no hubiera Radio Club.'},{l:'b',t:'En localidades de otra provincia en las que no hubiera Radio Club.'}],correct:['a']},
+{id:'III.9',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Qué categoría debe tener el Radioaficionado a cargo de la filial?',multi:true,opts:[{l:'a',t:'Novicio'},{l:'b',t:'General'},{l:'c',t:'Superior'}],correct:['b','c']},
+{id:'III.10',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿El Radioaficionado a cargo de la filial debe estar habilitado en el Libro de Actas del Radio Club?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'III.11',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Cómo debe operarse la estación en una filial de un Radio Club?',opts:[{l:'a',t:'Señal distintiva del Radio Club, agregando una barra, la palabra "filial" y el nombre de la localidad.'},{l:'b',t:'Señal distintiva del Radioaficionado, agregando una barra, la palabra "filial" y el nombre de la localidad.'}],correct:['a']},
+{id:'III.12',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Podrán las filiales de los Radio Clubes efectuar algún tipo de trámite ante la Autoridad de Aplicación?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'III.13',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Las Instituciones Autorizadas están habilitadas para dictar cursos y tomar exámenes para ingreso y ascenso de categorías de Radioaficionados?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'III.14',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Las Instituciones Reconocidas están autorizadas para dictar cursos sobre técnica, reglamentación y ética operativa, telegrafía y todo otro curso afín a la actividad?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'III.15',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Las Instituciones Reconocidas están autorizadas para tomar exámenes para ingreso y ascenso de categorías de Radioaficionados?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'III.16',cap:'Cap. III – Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas',q:'¿Las Instituciones Autorizadas pueden gestionar ante la Autoridad de Aplicación la documentación para ingreso y ascenso de categorías de Radioaficionados?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+// ─── CAP IV ───
+{id:'IV.1',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'Identifique las categorías de radioaficionados de acuerdo a la nueva reglamentación:',multi:true,opts:[{l:'a',t:'Inicial'},{l:'b',t:'Novicio'},{l:'c',t:'Intermedia'},{l:'d',t:'General'},{l:'e',t:'Superior'},{l:'f',t:'Especial'}],correct:['b','d','e','f']},
+{id:'IV.2',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Quién tramita ante el ENACOM?',multi:true,opts:[{l:'a',t:'Radio Clubes'},{l:'b',t:'Radioaficionados'},{l:'c',t:'Instituciones Reconocidas'},{l:'d',t:'Instituciones Autorizadas'}],correct:['a','d']},
+{id:'IV.3',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cuál es la edad mínima para la categoría Novicio?',opts:[{l:'a',t:'12 años'},{l:'b',t:'9 años'},{l:'c',t:'18 años'}],correct:['b']},
+{id:'IV.4',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cuál es la edad mínima para la categoría General?',opts:[{l:'a',t:'13 años'},{l:'b',t:'16 años'},{l:'c',t:'18 años'}],correct:['a']},
+{id:'IV.5',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cuál es la potencia de RF máxima permitida para la categoría Novicio?',opts:[{l:'a',t:'50 vatios.'},{l:'b',t:'100 vatios.'},{l:'c',t:'150 vatios.'},{l:'d',t:'200 vatios.'}],correct:['d']},
+{id:'IV.6',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cuántos años de actividad ininterrumpida en categoría NOVICIO hay que acreditar para ascender a categoría GENERAL?',opts:[{l:'a',t:'2 años.'},{l:'b',t:'1 año.'},{l:'c',t:'5 años.'},{l:'d',t:'3 años.'}],correct:['d']},
+{id:'IV.7',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cada cuántos años debe renovarse la licencia de Radioaficionado?',opts:[{l:'a',t:'2 años.'},{l:'b',t:'4 años.'},{l:'c',t:'5 años.'},{l:'d',t:'10 años.'}],correct:['c']},
+{id:'IV.8',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'¿Cuáles son los requerimientos para obtener la categoría ESPECIAL?',opts:[{l:'a',t:'Categoría Superior con 60 años de actividad ininterrumpida.'},{l:'b',t:'Categoría Superior con 20 años de actividad ininterrumpida.'},{l:'c',t:'Categoría Superior con 50 años de actividad ininterrumpida.'},{l:'d',t:'Categoría Superior con 50 años de antigüedad.'}],correct:['b']},
+{id:'IV.9',cap:'Cap. IV – Radioaficionados: Categorías y Requisitos',q:'Transcurridos 5 años desde el otorgamiento de la licencia, ¿de qué plazo dispondrá el Radioaficionado para solicitar la renovación?',opts:[{l:'a',t:'3 meses'},{l:'b',t:'12 meses'},{l:'c',t:'6 meses'}],correct:['b']},
+// ─── CAP V ───
+{id:'V.1',cap:'Cap. V – Radioescuchas',q:'Defina RADIOESCUCHA:',opts:[{l:'a',t:'Persona debidamente autorizada que se interesa en la radiotecnia con carácter exclusivamente personal y sin fines de lucro, y que realiza actividades de instrucción, de intercomunicación y estudios técnicos.'},{l:'b',t:'Persona física autorizada exclusivamente a la recepción de emisiones en las bandas de frecuencia atribuidas a los Servicios de Radioaficionados y de Radioaficionados por Satélite. Para acceder a dicha autorización no es necesario contar con una Licencia de Radioaficionado.'}],correct:['b']},
+{id:'V.2',cap:'Cap. V – Radioescuchas',q:'En el momento en que un Radioescucha tramita y obtiene su licencia de radioaficionado, ¿qué ocurre con su Certificado de Radioescucha?',opts:[{l:'a',t:'Continúa teniendo vigencia.'},{l:'b',t:'Automáticamente queda dado de baja.'},{l:'c',t:'Le será requerido para el ascenso de categoría.'},{l:'d',t:'Ninguna es correcta.'}],correct:['a']},
+// ─── CAP VI ───
+{id:'VI.1',cap:'Cap. VI – Radioaficionados Extranjeros',q:'Los Radioaficionados extranjeros "en tránsito" o con "residencia temporaria" en la República Argentina, ¿ante quién deben gestionar la autorización para operar desde nuestro país?',opts:[{l:'a',t:'Ante los RADIO CLUBES.'},{l:'b',t:'Directamente ante la Autoridad de Aplicación.'},{l:'c',t:'La Sociedad Nacional miembro de I.A.R.U.'},{l:'d',t:'El Comité Federal de Radiodifusión.'}],correct:['a']},
+{id:'VI.2',cap:'Cap. VI – Radioaficionados Extranjeros',q:'¿Qué radioaficionado extranjero se encuentra exceptuado de gestionar la autorización para operar en el territorio nacional?',opts:[{l:'a',t:'Los que pertenecen a algún país signatario del IARP.'},{l:'b',t:'Cualquier radioaficionado extranjero.'}],correct:['a']},
+// ─── CAP VII ───
+{id:'VII.1',cap:'Cap. VII – Permisos Internacionales (IARP – CEPT)',q:'¿Qué es el Permiso Internacional de Aficionado (I.A.R.P.)?',opts:[{l:'a',t:'Un documento que permite a su tenedor operar sin restricciones en todos los países del mundo.'},{l:'b',t:'Un documento que faculta a su tenedor operar en los países de América signatarios del Convenio Interamericano sobre el IARP.'}],correct:['b']},
+{id:'VII.2',cap:'Cap. VII – Permisos Internacionales (IARP – CEPT)',q:'¿En cuántas Clases se emite el I.A.R.P. de acuerdo a la Resolución SC 3745/1997?',opts:[{l:'a',t:'Una Clase.'},{l:'b',t:'Dos Clases.'},{l:'c',t:'Tres Clases.'},{l:'d',t:'Cuatro Clases.'}],correct:['b']},
+{id:'VII.3',cap:'Cap. VII – Permisos Internacionales (IARP – CEPT)',q:'¿Qué categoría de Radioaficionado se debe tener para poder obtener el IARP de acuerdo a la Resolución SC 3745/1997?',opts:[{l:'a',t:'Sólo Superior.'},{l:'b',t:'General y Superior.'},{l:'c',t:'Intermedia, General y Superior.'},{l:'d',t:'No hay restricciones.'}],correct:['d']},
+{id:'VII.4',cap:'Cap. VII – Permisos Internacionales (IARP – CEPT)',q:'El IARP de Clase 1 faculta a operar:',opts:[{l:'a',t:'Sólo en bandas por sobre 30 MHz.'},{l:'b',t:'Sólo en bandas de 10, 15 y 20 metros.'},{l:'c',t:'En todas las bandas.'},{l:'d',t:'Sólo en bandas por debajo de 30 MHz.'}],correct:['c']},
+{id:'VII.5',cap:'Cap. VII – Permisos Internacionales (IARP – CEPT)',q:'El IARP de Clase 2 faculta a operar:',opts:[{l:'a',t:'En todas las bandas.'},{l:'b',t:'Sólo en bandas por sobre 30 MHz.'},{l:'c',t:'En todas las bandas.'},{l:'d',t:'En bandas de 80, 40 y 20 metros.'}],correct:['b']},
+// ─── CAP VIII ───
+{id:'VIII.1',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿En la señal distintiva a qué corresponde el prefijo?',opts:[{l:'a',t:'Al país.'},{l:'b',t:'A la provincia.'},{l:'c',t:'A la categoría del radioaficionado.'}],correct:['a']},
+{id:'VIII.2',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Cuál es el prefijo correspondiente a la República Argentina?',opts:[{l:'a',t:'LU/LW.'},{l:'b',t:'CX.'},{l:'c',t:'PY.'}],correct:['a']},
+{id:'VIII.3',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'La/s primera/s letras del sufijo de la señal distintiva corresponden a:',opts:[{l:'a',t:'País.'},{l:'b',t:'Provincia.'},{l:'c',t:'Categoría.'}],correct:['b']},
+{id:'VIII.4',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Cuál es el criterio de asignación del sufijo de la señal distintiva en caso de poseer sólo estaciones móviles?',opts:[{l:'a',t:'Domicilio de emplazamiento de la estación fija.'},{l:'b',t:'Domicilio indicado en el DNI del Radioaficionado.'}],correct:['b']},
+{id:'VIII.5',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Cuál es el criterio de asignación del sufijo de la señal distintiva en caso de poseer estación fija y móviles?',opts:[{l:'a',t:'Domicilio de emplazamiento de la estación fija.'},{l:'b',t:'Domicilio del DNI del Radioaficionado.'}],correct:['a']},
+{id:'VIII.6',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿A qué categoría se le puede asignar una señal distintiva con un sufijo de 2 letras?',opts:[{l:'a',t:'Categoría General.'},{l:'b',t:'Categoría Superior y Especial.'},{l:'c',t:'Cualquier categoría.'}],correct:['b']},
+{id:'VIII.7',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿En qué otro caso se puede asignar una señal distintiva con un sufijo de 2 letras?',opts:[{l:'a',t:'Por fallecimiento del titular, a un familiar que la reclame.'},{l:'b',t:'Por pedido del titular hacia un tercero.'}],correct:['a']},
+{id:'VIII.8',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Por cuánto tiempo queda reservada la señal distintiva por fallecimiento del titular?',opts:[{l:'a',t:'2 años.'},{l:'b',t:'1 año.'},{l:'c',t:'5 años.'}],correct:['a']},
+{id:'VIII.9',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Por cuánto tiempo se otorga la Señal Distintiva Especial?',opts:[{l:'a',t:'2 años.'},{l:'b',t:'1 año.'},{l:'c',t:'5 años.'}],correct:['b']},
+{id:'VIII.10',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Quiénes podrán solicitar Señales Distintivas Especiales?',multi:true,opts:[{l:'a',t:'Radioaficionados categoría General o Superior.'},{l:'b',t:'Radio Clubes, Instituciones Autorizadas, Instituciones Reconocidas.'},{l:'c',t:'Radioaficionados categoría Novicio.'}],correct:['a','b']},
+{id:'VIII.11',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿En ocasión de eventos que requieran de Señal Distintiva Especial, puede un radioaficionado de cualquier categoría que forme parte de un equipo de operación, operar en todas las bandas autorizadas al titular del equipo?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'VIII.12',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Cuáles son las condiciones que deberá acreditar el Radioaficionado para solicitar una Señal Distintiva Especial?',multi:true,opts:[{l:'a',t:'Haber participado en tres concursos distintos con su señal distintiva propia.'},{l:'b',t:'Haber realizado en cada uno de ellos un mínimo de 500 contactos.'},{l:'c',t:'Haber sido titular de equipo de operación.'}],correct:['a','b']},
+{id:'VIII.13',cap:'Cap. VIII – Señales Distintivas e Identificación',q:'¿Se pueden tener dos o más Señales Distintivas Especiales vigentes al mismo tiempo?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+// ─── CAP IX ───
+{id:'IX.1',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿En qué casos los titulares de licencia de Radioaficionado están autorizados a instalar y operar estaciones móviles?',opts:[{l:'a',t:'Sólo en caso de emergencias.'},{l:'b',t:'Sólo en período de vacaciones.'},{l:'c',t:'Cuando posea licencia de conductor.'},{l:'d',t:'No hay restricciones.'}],correct:['d']},
+{id:'IX.2',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿Quién puede operar una estación radioeléctrica correspondiente al Servicio de Radioaficionado y al Servicio de Radioaficionado por Satélite?',opts:[{l:'a',t:'Su titular u otro Radioaficionado que él mismo autorice.'},{l:'b',t:'Cualquier Radioaficionado.'},{l:'c',t:'Ningún Radioaficionado distinto a su titular.'}],correct:['a']},
+{id:'IX.3',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'Cuando un Radioaficionado opera una estación radioeléctrica de la cual no es titular, ¿cómo se debe identificar?',opts:[{l:'a',t:'Haciendo mención de la señal distintiva del titular y de la propia, en ese orden, seguido de una barra y la letra correspondiente a la división política.'},{l:'b',t:'Haciendo mención de la señal distintiva propia y la del titular, en ese orden, seguido de una barra y la letra correspondiente a la división política.'},{l:'c',t:'Haciendo mención de la señal distintiva propia.'}],correct:['a']},
+{id:'IX.4',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'Cuando un Radioaficionado opera una estación radioeléctrica de la cual no es titular, ¿en qué bandas lo hace?',opts:[{l:'a',t:'En las permitidas según la categoría del Titular.'},{l:'b',t:'En las permitidas según la categoría del Operador.'}],correct:['b']},
+{id:'IX.5',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿Quiénes podrán operar simultáneamente múltiples estaciones de su titularidad durante el dictado de cursos, Práctica Operativa, toma de exámenes, contactos DX o concursos?',opts:[{l:'a',t:'Radioaficionados.'},{l:'b',t:'Radio Clubes, Instituciones Autorizadas e Instituciones Reconocidas.'}],correct:['b']},
+{id:'IX.6',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'En caso que el Radioaficionado posea más de una estación fija, ¿es necesario declararlas a todas?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'IX.7',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿En caso de trasladar una estación fija por un período mayor a 120 días corridos, se deberá solicitar el cambio de domicilio de emplazamiento?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'IX.8',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'Con relación a la altura de la estructura soporte de antenas, ¿ante qué Organismo debe realizar el trámite pertinente de autorización?',opts:[{l:'a',t:'ENACOM.'},{l:'b',t:'ANAC.'}],correct:['b']},
+{id:'IX.9',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿Cómo se debe operar una estación móvil?',opts:[{l:'a',t:'Se deberá mencionar su señal distintiva, su ubicación geográfica y su condición de móvil.'},{l:'b',t:'Se deberá mencionar su señal distintiva y su ubicación geográfica.'}],correct:['a']},
+{id:'IX.10',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'¿Qué categoría debe poseer el titular de la licencia que deseara diseñar, construir, lanzar y/o constituirse como responsable primario de una estación espacial del Servicio de Radioaficionados por Satélite?',opts:[{l:'a',t:'GENERAL o SUPERIOR.'},{l:'b',t:'ESPECIAL.'},{l:'c',t:'NOVICIO.'}],correct:['a']},
+{id:'IX.11',cap:'Cap. IX – Estaciones Fijas, Móviles, Espaciales y Terrenas',q:'En caso de poseer Estaciones Terrenas pertenecientes al Servicio de Radioaficionados por Satélite, ¿es necesario registrarlas ante la Autoridad de Aplicación?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+// ─── CAP X ───
+{id:'X.1',cap:'Cap. X – Estaciones Repetidoras',q:'¿La Estación Repetidora tiene que estar autorizada ante la Autoridad de Aplicación?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'X.2',cap:'Cap. X – Estaciones Repetidoras',q:'¿Se podrá solicitar autorización para una Estación Repetidora para que opere en bandas cruzadas VHF/UHF?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'X.3',cap:'Cap. X – Estaciones Repetidoras',q:'¿En qué circunstancias la Autoridad de Aplicación podrá otorgar la autorización para el uso de una Estación Repetidora en bandas cruzadas VHF/UHF?',opts:[{l:'a',t:'En determinadas zonas geográficas.'},{l:'b',t:'Cuando no haya disponibilidad espectral.'},{l:'c',t:'Cuando el solicitante sea un Radioaficionado de categoría Superior.'}],correct:['a']},
+{id:'X.4',cap:'Cap. X – Estaciones Repetidoras',q:'¿Cuál es el plazo máximo para poner en funcionamiento una Estación Repetidora ya autorizada?',opts:[{l:'a',t:'72 horas.'},{l:'b',t:'30 días.'},{l:'c',t:'60 días.'},{l:'d',t:'90 días.'}],correct:['d']},
+{id:'X.5',cap:'Cap. X – Estaciones Repetidoras',q:'En el caso en que una Estación Repetidora autorizada se encuentra totalmente fuera de servicio, ¿cuál es el plazo máximo en que puede permanecer inactiva antes que se produzca su caducidad automática?',opts:[{l:'a',t:'72 horas.'},{l:'b',t:'30 días.'},{l:'c',t:'60 días.'},{l:'d',t:'90 días.'}],correct:['c']},
+{id:'X.6',cap:'Cap. X – Estaciones Repetidoras',q:'¿Puede haber en nuestro país Estaciones Repetidoras del Servicio de Radioaficionados con acceso codificado mediante subtonos?',opts:[{l:'a',t:'No, porque la Reglamentación lo prohíbe.'},{l:'b',t:'No, porque los equipos para Radioaficionados no disponen de subtonos.'},{l:'c',t:'Sí, siempre que el código sea aprobado previamente por la Autoridad de Aplicación y sea de conocimiento público.'},{l:'d',t:'Sí, si el código es únicamente de conocimiento previo de la Autoridad de Aplicación.'}],correct:['c']},
+{id:'X.7',cap:'Cap. X – Estaciones Repetidoras',q:'¿Cómo se identifican las Estaciones Repetidoras?',opts:[{l:'a',t:'Con la señal distintiva del titular y la localidad del emplazamiento de la Estación Repetidora.'},{l:'b',t:'Con la señal distintiva del titular.'},{l:'c',t:'Con la señal distintiva del titular, la localidad de emplazamiento de la estación fija y la localidad del emplazamiento de la Estación Repetidora.'}],correct:['a']},
+{id:'X.8',cap:'Cap. X – Estaciones Repetidoras',q:'¿De cuánto tiempo dispone el titular de la Estación repetidora para comunicar a la Autoridad de Aplicación el inicio de su operación?',opts:[{l:'a',t:'15 días corridos.'},{l:'b',t:'30 días corridos.'},{l:'c',t:'60 días corridos.'}],correct:['a']},
+{id:'X.9',cap:'Cap. X – Estaciones Repetidoras',q:'¿Ante qué casos caducará la autorización de una Estación Repetidora?',multi:true,opts:[{l:'a',t:'No haber informado dentro de los 15 días corridos el inicio de su operación.'},{l:'b',t:'Inactividad comprobada en un período mayor a los 60 días corridos.'},{l:'c',t:'No haber renovado la licencia del titular o la autorización de la Estación Repetidora en el período estipulado.'},{l:'d',t:'Cuando el titular reciba un apercibimiento por parte de la Autoridad de Aplicación por infracción en el uso de la Estación Repetidora.'}],correct:['a','b','c']},
+{id:'X.10',cap:'Cap. X – Estaciones Repetidoras',q:'¿Para dar de baja una Estación Repetidora de cuánto tiempo se dispone desde el cese de las emisiones?',opts:[{l:'a',t:'15 días corridos.'},{l:'b',t:'30 días corridos.'},{l:'c',t:'60 días corridos.'}],correct:['a']},
+{id:'X.11',cap:'Cap. X – Estaciones Repetidoras',q:'¿Cuando se solicita la baja de una Estación Repetidora, se deben desmantelar las instalaciones radioeléctricas?',opts:[{l:'a',t:'Siempre.'},{l:'b',t:'Sólo cuando la Autoridad de Aplicación lo requiera.'},{l:'c',t:'Nunca.'}],correct:['a']},
+{id:'X.12',cap:'Cap. X – Estaciones Repetidoras',q:'¿Qué se requiere para la autorización de un enlace de 2 o más Estaciones Repetidoras?',opts:[{l:'a',t:'La conformidad por escrito de los titulares de las Estaciones Repetidoras.'},{l:'b',t:'Sólo el estudio técnico del cálculo de enlace.'},{l:'c',t:'El estudio técnico del cálculo de enlace y la conformidad por escrito de los titulares de las Estaciones Repetidoras.'}],correct:['c']},
+{id:'X.13',cap:'Cap. X – Estaciones Repetidoras',q:'¿Es obligatorio contar con un sistema de apagado de la Estación Repetidora?',opts:[{l:'a',t:'Sí'},{l:'b',t:'No'}],correct:['a']},
+{id:'X.14',cap:'Cap. X – Estaciones Repetidoras',q:'En caso de optarse por control remoto de la Estación Repetidora mediante vínculo radioeléctrico, ¿éste deberá contar con la autorización de la Autoridad de Aplicación?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'X.15',cap:'Cap. X – Estaciones Repetidoras',q:'¿La frecuencia de transmisión para el control remoto de una Estación Repetidora mediante vínculo radioeléctrico, podrá encontrarse dentro de una banda de radioaficionados?',opts:[{l:'a',t:'Sí'},{l:'b',t:'No'}],correct:['b']},
+// ─── CAP XI ───
+{id:'XI.1',cap:'Cap. XI – Radiobalizas (Radiofaros)',q:'¿Qué categoría se requiere para instalar y poner en funcionamiento una Radiobaliza (Radiofaro)?',opts:[{l:'a',t:'Novicio.'},{l:'b',t:'General.'},{l:'c',t:'Superior.'},{l:'d',t:'No se requiere una categoría determinada.'}],correct:['d']},
+{id:'XI.2',cap:'Cap. XI – Radiobalizas (Radiofaros)',q:'¿Cuántas señales de Radiobalizas pueden emitirse desde el mismo lugar de emplazamiento?',opts:[{l:'a',t:'Sólo una.'},{l:'b',t:'Dos.'},{l:'c',t:'Tres.'},{l:'d',t:'No hay limitaciones.'}],correct:['a']},
+{id:'XI.3',cap:'Cap. XI – Radiobalizas (Radiofaros)',q:'¿Con cuántos días de anticipación a la instalación el Radioaficionado deberá notificar a la Autoridad de Aplicación la puesta en funcionamiento de la Radiobaliza?',opts:[{l:'a',t:'10 días.'},{l:'b',t:'15 días.'},{l:'c',t:'30 días.'},{l:'d',t:'No se necesita notificar.'}],correct:['b']},
+// ─── CAP XII ───
+{id:'XII.1',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Quiénes podrán dictar cursos y/o tomar examen para ingreso y ascenso de categoría?',multi:true,opts:[{l:'a',t:'Radio Clubes.'},{l:'b',t:'Instituciones Autorizadas.'},{l:'c',t:'Instituciones Reconocidas.'}],correct:['a','b']},
+{id:'XII.2',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Se podrá rendir examen en condición de libre, sin realizar cursos en Radio Clubes e Instituciones Autorizadas?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'XII.3',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Cómo deberán tomarse los exámenes para ingreso o ascenso de categoría?',opts:[{l:'a',t:'En forma escrita únicamente.'},{l:'b',t:'En forma oral únicamente.'},{l:'c',t:'En forma escrita, y para aspirantes no videntes o imposibilitados para escribir, en forma oral.'}],correct:['c']},
+{id:'XII.4',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Quiénes están autorizados a dar prácticas operativas?',multi:true,opts:[{l:'a',t:'Radio Clubes.'},{l:'b',t:'Instituciones Autorizadas.'},{l:'c',t:'Instituciones Reconocidas.'}],correct:['a','b','c']},
+{id:'XII.5',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Quién supervisa las prácticas operativas?',opts:[{l:'a',t:'Veedor.'},{l:'b',t:'Instructor.'},{l:'c',t:'Autoridades del Radio Club, Institución Autorizada y/o Instituciones Reconocidas.'}],correct:['b']},
+{id:'XII.6',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'El Instructor designado, ¿debe estar registrado en el Libro de Actas y debe dar fe por medio de un certificado que el aspirante cumplió con los requisitos solicitados durante la práctica operativa?',opts:[{l:'a',t:'Sí'},{l:'b',t:'No'}],correct:['a']},
+{id:'XII.7',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Las prácticas operativas destinadas a recepción deben cumplirse por cuántas horas?',opts:[{l:'a',t:'6 hs.'},{l:'b',t:'12 hs.'}],correct:['a']},
+{id:'XII.8',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Las prácticas operativas deben asentarse en el Libro de Guardia?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'XII.9',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿En caso de mediar distancias excesivas o dificultades geográficas, las prácticas operativas podrán realizarse en las filiales de los Radio Clubes o en el domicilio de un Instructor?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'XII.10',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Con qué señal distintiva operará el Instructor a distancia?',opts:[{l:'a',t:'Señal distintiva del Radio Club'},{l:'b',t:'Señal distintiva propia del Instructor'}],correct:['b']},
+{id:'XII.11',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿La autorización al Instructor a distancia deberá estar plasmada en el Libro de Actas (con validez expresamente detallada)?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['a']},
+{id:'XII.12',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Cuáles son las funciones de Instructor?',multi:true,opts:[{l:'a',t:'Dictar cursos.'},{l:'b',t:'Tomar exámenes.'},{l:'c',t:'Coordinar las prácticas operativas.'},{l:'d',t:'Organizar concursos.'},{l:'e',t:'Firmar los Certificados de Aprobación de Examen.'}],correct:['a','b','c']},
+{id:'XII.13',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Qué categoría mínima debe tener el Instructor?',opts:[{l:'a',t:'Novicio.'},{l:'b',t:'General.'},{l:'c',t:'Superior.'},{l:'d',t:'Especial.'}],correct:['b']},
+{id:'XII.14',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Puede un Radioaficionado que ha sido sancionado alguna vez por la Autoridad de Aplicación ser instructor?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'XII.15',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Puede un instructor tomar examen a familiares directos?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'XII.16',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'Ante un requerimiento de una Institución Autorizada a un Radio Club para formar parte de la mesa examinadora, el Radio Club debe designar a un radioaficionado de categoría mínima:',multi:true,opts:[{l:'a',t:'General'},{l:'b',t:'Superior'},{l:'c',t:'Especial'}],correct:['a','b']},
+{id:'XII.17',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Cuántos meses de validez tiene el Certificado de Aprobación de examen para ser presentado ante la Autoridad de Aplicación?',opts:[{l:'a',t:'3 meses.'},{l:'b',t:'6 meses.'},{l:'c',t:'12 meses.'}],correct:['b']},
+{id:'XII.18',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Toda certificación de aprobación de examen autoriza a un aspirante a instalar y poner en funcionamiento equipos radioeléctricos, hasta tanto la Autoridad de Aplicación otorgue la licencia correspondiente?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'}],correct:['b']},
+{id:'XII.19',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'Para la categoría Novicio, el examen de telegrafía será:',opts:[{l:'a',t:'Teórico.'},{l:'b',t:'Práctico.'}],correct:['a']},
+{id:'XII.20',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'En el examen de Telegrafía, ¿cuántos caracteres se consideran una palabra?',opts:[{l:'a',t:'5.'},{l:'b',t:'10.'},{l:'c',t:'Más de 10.'}],correct:['a']},
+{id:'XII.21',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'En el examen de Telegrafía, ¿cuántos caracteres se consideran una letra de la A a la Z?',opts:[{l:'a',t:'1.'},{l:'b',t:'2.'},{l:'c',t:'Más de 2.'}],correct:['a']},
+{id:'XII.22',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'En el examen de Telegrafía, ¿cuántos caracteres se consideran un número y signo de puntuación?',opts:[{l:'a',t:'1.'},{l:'b',t:'2.'},{l:'c',t:'Más de 2.'}],correct:['b']},
+{id:'XII.23',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'En el Libro de Guardia se deberá consignar:',multi:true,opts:[{l:'a',t:'Fecha, hora de comienzo y finalización del comunicado.'},{l:'b',t:'Clase de emisión empleada.'},{l:'c',t:'Potencia transmitida.'},{l:'d',t:'Señal distintiva de la estación corresponsal.'}],correct:['a','b','d']},
+{id:'XII.24',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿Cuál es la función de un veedor?',multi:true,opts:[{l:'a',t:'Participar en la confección del examen.'},{l:'b',t:'Firmar el acta de examen.'},{l:'c',t:'Firmar el certificado de aprobación de examen.'},{l:'d',t:'Atender consultas de los examinados durante el examen.'}],correct:['b','c']},
+{id:'XII.25',cap:'Cap. XII – Cursos, Prácticas Operativas y Exámenes',q:'¿El veedor deberá pertenecer al mismo Radio Club o Institución Autorizada que toma el examen?',opts:[{l:'a',t:'Sí.'},{l:'b',t:'No.'},{l:'c',t:'Indistinto.'}],correct:['b']},
+// ─── CAP XIII ───
+{id:'XIII.1',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'Se consideran infracciones de carácter general:',multi:true,opts:[{l:'a',t:'Operar la estación sin licencia vigente.'},{l:'b',t:'Ceder el micrófono a otro Radioaficionado.'},{l:'c',t:'Comunicar con estaciones no autorizadas.'},{l:'d',t:'Grabar emisiones de terceros y retransmitirlas.'},{l:'e',t:'Referirse a temas de índole política, religiosa o racial.'},{l:'f',t:'Transmitir música.'}],correct:['a','c','e','f']},
+{id:'XIII.2',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'Se consideran infracciones de identificación:',multi:true,opts:[{l:'a',t:'Identificarse con una señal distintiva perteneciente a otro Radioaficionado.'},{l:'b',t:'Omitir mencionar junto con la señal distintiva de la estación móvil, el lugar geográfico de su actual ubicación.'},{l:'c',t:'Mencionar la señal distintiva del Radioaficionado titular y la propia cuando se utilice su estación.'},{l:'d',t:'Utilizar una Señal Distintiva Especial vencida o no autorizada por la Autoridad de Aplicación.'},{l:'e',t:'Mencionar la señal distintiva del Radio Club y la propia cuando se utilice la estación de dicho Radio Club.'},{l:'f',t:'Omitir mencionar que se está operando en "Practica Operativa" cuando corresponda.'}],correct:['a','b','d','f']},
+{id:'XIII.3',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'Se consideran infracciones operativas:',multi:true,opts:[{l:'a',t:'Transmitir en frecuencia y/o potencia no autorizada para la categoría.'},{l:'b',t:'Transmitir textos encriptados.'},{l:'c',t:'Realizar o participar en concursos de Radioaficionados sobre frecuencias no autorizadas al efecto.'},{l:'d',t:'Trasladar la estación fija por 90 días sin notificar a la Autoridad de Aplicación.'}],correct:['a','b','c']},
+{id:'XIII.4',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'Se consideran infracciones relativas a Estaciones Repetidoras:',multi:true,opts:[{l:'a',t:'No contar con dispositivos de identificación.'},{l:'b',t:'Utilizar frecuencias diferentes a las autorizadas.'},{l:'c',t:'Entrelazar Estaciones Repetidoras sin la autorización correspondiente.'},{l:'d',t:'Ceder la autorización de una estación repetidora a otro Radioaficionado.'}],correct:['a','b','c']},
+{id:'XIII.5',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'Se consideran infracciones relativas a Radiobalizas:',multi:true,opts:[{l:'a',t:'Operar una Radiobaliza no notificada a la Autoridad de Aplicación.'},{l:'b',t:'Emitir simultáneamente más de una Radiobaliza en la misma banda y desde el mismo emplazamiento.'},{l:'c',t:'Operar con potencias superiores a las autorizadas en el Reglamento.'},{l:'d',t:'Operar con una potencia de 50 W en la banda de 2 m.'}],correct:['a','b','c']},
+{id:'XIII.6',cap:'Cap. XIII – Régimen de Infracciones y Sanciones',q:'El orden de las sanciones al cometer y reiterar infracciones es:',opts:[{l:'a',t:'Llamado de atención – Apercibimiento – Sanción económica – Suspensión – Cancelación de la licencia.'},{l:'b',t:'Llamado de atención – Sanción económica – Suspensión – Cancelación de la licencia.'},{l:'c',t:'Llamado de atención – Sanción económica – Cancelación de la licencia.'}],correct:['a']},
+];
+
+// ── CATEGORIES ──
+const CATS = [
+  {id:'full',name:'Completo',desc:'Todos los capítulos (I – XIII)',icon:'📡',filter:q=>true},
+  {id:'cap1',name:'Capítulo I',desc:'Disposiciones Generales',icon:'§',filter:q=>q.id.startsWith('I.')},
+  {id:'cap2',name:'Caps. II–IV',desc:'Facultades · Radio Clubes · Categorías',icon:'§§',filter:q=>['II','III','IV'].some(p=>q.id.startsWith(p+'.'))},
+  {id:'cap3',name:'Caps. V–VIII',desc:'Radioescuchas · Extranjeros · IARP · Señales',icon:'✉',filter:q=>['V','VI','VII','VIII'].some(p=>q.id.startsWith(p+'.'))},
+  {id:'cap4',name:'Caps. IX–XI',desc:'Estaciones · Repetidoras · Balizas',icon:'⚡',filter:q=>['IX','X','XI'].some(p=>q.id.startsWith(p+'.'))},
+  {id:'cap5',name:'Caps. XII–XIII',desc:'Exámenes · Infracciones y Sanciones',icon:'⚖',filter:q=>['XII','XIII'].some(p=>q.id.startsWith(p+'.'))},
+];
+
+// ── STATE ──
+let activeQs=[], answers=[], confirmed=[], cur=0, selCat=null;
+
+// ── INIT ──
+(function init(){
+  const g=document.getElementById('catGrid');
+  CATS.forEach(c=>{
+    const qs=QUESTIONS.filter(c.filter);
+    const d=document.createElement('div');
+    d.className='cat';
+    d.innerHTML=`<div class="cat-code">BLOQUE · ${c.id.toUpperCase()}</div>
+      <div class="cat-name">${c.name}</div>
+      <div class="cat-info">${c.desc}</div>
+      <div class="cat-count"><b>${qs.length}</b> preguntas</div>`;
+    d.onclick=()=>{
+      document.querySelectorAll('.cat').forEach(x=>x.classList.remove('sel'));
+      d.classList.add('sel');
+      selCat=c;
+      document.getElementById('btnStart').disabled=false;
+    };
+    g.appendChild(d);
+  });
+})();
+
+function startExam(){
+  if(!selCat)return;
+  activeQs=QUESTIONS.filter(selCat.filter);
+  answers=activeQs.map(()=>[]);
+  confirmed=activeQs.map(()=>false);
+  cur=0;
+  document.getElementById('scr-start').style.display='none';
+  document.getElementById('scr-quiz').style.display='block';
+  renderQ();
+}
+
+function renderQ(){
+  const q=activeQs[cur];
+  const tot=activeQs.length;
+  const pct=Math.round((cur/tot)*100);
+  document.getElementById('pNum').innerHTML=`${cur+1} <span>/ ${tot}</span>`;
+  document.getElementById('pFill').style.width=pct+'%';
+  document.getElementById('capTag').textContent=q.cap;
+  document.getElementById('qNum').textContent=`Pregunta ${q.id}`;
+  document.getElementById('qText').textContent=q.q;
+  const mn=document.getElementById('multiNote');
+  mn.className='multi-note'+(q.multi?' on':'');
+
+  const wrap=document.getElementById('optsWrap');
+  wrap.innerHTML='';
+  q.opts.forEach(o=>{
+    const div=document.createElement('div');
+    div.className='opt'+(answers[cur].includes(o.l)?' sel':'');
+    div.innerHTML=`<div class="ol">${o.l}</div><div class="ot">${o.t}</div>`;
+    if(confirmed[cur]){
+      div.classList.add('dis');
+      const isCorrect=q.correct.includes(o.l);
+      const wasSelected=answers[cur].includes(o.l);
+      if(wasSelected&&isCorrect) div.classList.add('correct');
+      else if(wasSelected&&!isCorrect) div.classList.add('wrong');
+      else if(!wasSelected&&isCorrect) div.classList.add('show-c');
+    } else {
+      div.onclick=()=>toggleOpt(o.l,div,q.multi);
+    }
+    wrap.appendChild(div);
+  });
+
+  // nav buttons
+  const isLast=cur===tot-1;
+  document.getElementById('btnPrev').disabled=cur===0;
+  document.getElementById('btnNext').disabled=!confirmed[cur]||isLast;
+  document.getElementById('btnConf').style.display=confirmed[cur]?'none':'inline-block';
+  document.getElementById('btnFin').style.display=(confirmed[cur]&&isLast)||allConfirmed()?'inline-block':'none';
+}
+
+function allConfirmed(){return confirmed.every(Boolean)}
+
+function toggleOpt(l,el,multi){
+  if(!multi){
+    answers[cur]=[l];
+    document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+    el.classList.add('sel');
+  } else {
+    const idx=answers[cur].indexOf(l);
+    if(idx>=0){answers[cur].splice(idx,1);el.classList.remove('sel');}
+    else{answers[cur].push(l);el.classList.add('sel');}
+  }
+}
+
+function confirmAnswer(){
+  if(answers[cur].length===0)return;
+  confirmed[cur]=true;
+  renderQ();
+}
+
+function prevQ(){if(cur>0){cur--;renderQ();}}
+function nextQ(){if(cur<activeQs.length-1){cur++;renderQ();}}
+
+function finishExam(){
+  document.getElementById('scr-quiz').style.display='none';
+  document.getElementById('scr-results').style.display='block';
+
+  let correct=0, wrong=[];
+  activeQs.forEach((q,i)=>{
+    const got=[...answers[i]].sort().join(',');
+    const exp=[...q.correct].sort().join(',');
+    if(got===exp){correct++;}
+    else{wrong.push({q,given:answers[i],exp:q.correct});}
+  });
+
+  const tot=activeQs.length;
+  const pct=Math.round((correct/tot)*100);
+  const pass=pct>=60;
+
+  document.getElementById('rVerdict').textContent=pass?'✓ APROBADO':'✗ DESAPROBADO';
+  document.getElementById('rVerdict').className='verdict '+(pass?'pass':'fail');
+  document.getElementById('rScore').textContent=pct+'%';
+  document.getElementById('rScore').className='score '+(pass?'pass':'fail');
+  document.getElementById('rDetail').textContent=`${correct} correctas de ${tot} preguntas · Mínimo requerido: 60%`;
+  document.getElementById('sOk').textContent=correct;
+  document.getElementById('sBad').textContent=tot-correct;
+  document.getElementById('sTot').textContent=tot;
+
+  const rev=document.getElementById('wrongReview');
+  if(wrong.length===0){
+    rev.innerHTML='<div style="text-align:center;padding:30px;font-family:var(--mono);font-size:12px;color:var(--acc)">✓ ¡PERFECTO! No hay respuestas incorrectas.</div>';
+  } else {
+    rev.innerHTML=`<div class="rev-title">Respuestas incorrectas (${wrong.length})</div>`;
+    wrong.forEach((w,i)=>{
+      const givenText=w.given.map(l=>{const o=w.q.opts.find(x=>x.l===l);return o?`[${l.toUpperCase()}] ${o.t}`:l}).join(' / ');
+      const corrText=w.exp.map(l=>{const o=w.q.opts.find(x=>x.l===l);return o?`[${l.toUpperCase()}] ${o.t}`:l}).join(' / ');
+      rev.innerHTML+=`<div class="wi">
+        <div class="wi-h"><span class="wi-n">${w.q.id}</span><span class="wi-q">${w.q.q}</span></div>
+        <div class="wi-b">
+          <div class="ar"><div class="al given">Tu respuesta</div><div class="av">${givenText||'Sin respuesta'}</div></div>
+          <div class="ar"><div class="al correct">Respuesta correcta</div><div class="av">${corrText}</div></div>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('scr-results').scrollTop=0;
+  window.scrollTo(0,0);
+}
+
+function restartExam(){
+  document.getElementById('scr-results').style.display='none';
+  startExam();
+}
+function goHome(){
+  document.getElementById('scr-results').style.display='none';
+  document.getElementById('scr-start').style.display='flex';
+  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('sel'));
+  selCat=null;
+  document.getElementById('btnStart').disabled=true;
+}
+</script>
+</body>
+</html>
